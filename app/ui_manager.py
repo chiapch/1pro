@@ -76,7 +76,7 @@ class UIManager:
         app.screen.blit(title, (20, SCREEN_HEIGHT - 110))
 
         hint1 = app.small_font.render(
-            "Q — теги | X — объекты | L — слои | T — время | V — видимость слоев | ESC — закрыть",
+            "Q — теги | X — объекты | L — слои | T — время | V — видимость слоев | F3 — perf | ESC — закрыть",
             True,
             SUBTEXT_COLOR,
         )
@@ -111,6 +111,19 @@ class UIManager:
                 TEXT_COLOR,
             )
             app.screen.blit(hover_txt, (1040, SCREEN_HEIGHT - 30))
+
+        if app.perf_monitor.enabled:
+            perf_title = app.small_font.render("perf top (ms):", True, TEXT_COLOR)
+            app.screen.blit(perf_title, (20, 12))
+
+            top_sections = app.perf_monitor.get_top_sections(top_n=5)
+            for idx, (section, ms) in enumerate(top_sections):
+                row = app.small_font.render(
+                    f"{idx + 1}. {section}: {ms:.2f}",
+                    True,
+                    SUBTEXT_COLOR,
+                )
+                app.screen.blit(row, (20, 34 + idx * 18))
 
     def draw_tag_panels(self) -> None:
         app = self.app

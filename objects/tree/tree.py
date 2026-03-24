@@ -228,8 +228,22 @@ class Tree(WorldObject):
         if not self.alive:
             return
 
-        process_tree_water(self, dt, world)
-        process_tree_growth(self, dt)
-        process_tree_root_growth(self, dt, world, cell_x, cell_y)
-        process_tree_reproduction(self, dt, world)
-        process_tree_canopy(self, dt, world, cell_x, cell_y)
+        monitor = getattr(world, "perf_monitor", None)
+        if monitor is None:
+            process_tree_water(self, dt, world)
+            process_tree_growth(self, dt)
+            process_tree_root_growth(self, dt, world, cell_x, cell_y)
+            process_tree_reproduction(self, dt, world)
+            process_tree_canopy(self, dt, world, cell_x, cell_y)
+            return
+
+        with monitor.measure("tree.water"):
+            process_tree_water(self, dt, world)
+        with monitor.measure("tree.growth"):
+            process_tree_growth(self, dt)
+        with monitor.measure("tree.root_growth"):
+            process_tree_root_growth(self, dt, world, cell_x, cell_y)
+        with monitor.measure("tree.reproduction"):
+            process_tree_reproduction(self, dt, world)
+        with monitor.measure("tree.canopy"):
+            process_tree_canopy(self, dt, world, cell_x, cell_y)
