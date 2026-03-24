@@ -2,6 +2,11 @@ from objects.tree.tree_root import TreeRoot
 
 
 def recalculate_tree_water_needs(tree) -> None:
+    signature = (round(tree.height, 4), round(tree.trunk_thickness, 4))
+    if tree._water_needs_signature == signature:
+        return
+    tree._water_needs_signature = signature
+
     tree.maintenance_water_need_per_tick = round(
         0.004 + tree.height * 0.0008 + tree.trunk_thickness * 0.0012,
         5,

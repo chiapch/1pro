@@ -53,6 +53,7 @@ class Tree(WorldObject):
     last_water_income: float = 0.0
     water_buffer: float = 0.0
     water_buffer_capacity: float = 1.0
+    _water_needs_signature: tuple[float, float] | None = None
 
     maintenance_water_need_per_tick: float = 0.0
     growth_water_need_per_tick: float = 0.0
@@ -161,6 +162,7 @@ class Tree(WorldObject):
             4,
         )
         self.water_buffer = round(self.water_buffer_capacity * 0.55, 4)
+        self._water_needs_signature = None
 
         self.maintenance_water_need_per_tick = 0.0
         self.growth_water_need_per_tick = 0.0

@@ -23,20 +23,19 @@ class WorldGrid:
                     if hasattr(layer, "update"):
                         layer.update(dt)
 
-        snapshot = []
-
         for row in self.cells:
             for cell in row:
                 for layer in cell.get_layers_in_order():
-                    for obj in list(layer.get_objects()):
-                        snapshot.append((cell.x, cell.y, layer.layer_name, obj))
+                    objects = layer.get_objects()
+                    if not objects:
+                        continue
 
-        for cell_x, cell_y, layer_name, obj in snapshot:
-            if hasattr(obj, "update"):
-                try:
-                    obj.update(dt, self, cell_x, cell_y)
-                except TypeError:
-                    obj.update(dt)
+                    for obj in list(objects):
+                        if hasattr(obj, "update"):
+                            try:
+                                obj.update(dt, self, cell.x, cell.y)
+                            except TypeError:
+                                obj.update(dt)
 
     def collect_diagnostics(self) -> dict:
         object_type_counts: dict[str, int] = {}
