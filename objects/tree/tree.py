@@ -145,8 +145,11 @@ class Tree(WorldObject):
         self.root_positions = []
 
         self.last_water_income = 0.0
-        self.water_buffer = 0.25
-        self.water_buffer_capacity = 1.0
+        self.water_buffer_capacity = round(
+            0.25 + self.height * 0.03 + self.trunk_thickness * 0.08,
+            4,
+        )
+        self.water_buffer = round(self.water_buffer_capacity * 0.55, 4)
 
         self.maintenance_water_need_per_tick = 0.0
         self.growth_water_need_per_tick = 0.0

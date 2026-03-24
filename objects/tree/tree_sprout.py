@@ -60,3 +60,10 @@ class TreeSprout(WorldObject):
         self.growth_need_per_tick = 0.002
         self.last_support_paid = 0.0
         self.last_growth_paid = 0.0
+
+    def update(self, dt: float, world, cell_x: int, cell_y: int) -> None:
+        from objects.tree.tree_sprout_growth_logic import process_tree_sprout_growth
+
+        self.cell_x = cell_x
+        self.cell_y = cell_y
+        process_tree_sprout_growth(self, dt, world)
