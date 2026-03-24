@@ -174,3 +174,8 @@ class InputRouter:
                 app.layer_browser.go_back()
             else:
                 app.object_browser.go_back()
+            return
+
+        if key in (pygame.K_F3, pygame.K_F6):
+            enabled = app.perf_monitor.toggle()
+            print(f"[perf] diagnostics {'enabled' if enabled else 'disabled'}")
