@@ -2,6 +2,7 @@ import pygame
 
 from objects.tree.tree import Tree
 from objects.tree.tree_root import TreeRoot
+from objects.tree.tree_sprout import TreeSprout
 from objects.fallen_branch import FallenBranch
 from objects.fallen_foliage import FallenFoliage
 
@@ -13,6 +14,7 @@ ROOT_COLOR = (90, 55, 30)
 
 BRANCH_COLOR = (150, 110, 70)
 FOLIAGE_COLOR = (90, 120, 70)
+SPROUT_COLOR = (130, 190, 95)
 
 
 class ObjectRenderer:
@@ -63,6 +65,8 @@ class ObjectRenderer:
         for obj in objects:
             if isinstance(obj, Tree):
                 self.draw_tree(screen, rect, obj, alpha)
+            elif isinstance(obj, TreeSprout):
+                self.draw_tree_sprout(screen, rect, alpha)
 
     def draw_air_objects(self, screen: pygame.Surface, rect: pygame.Rect, objects: list, alpha: float) -> None:
         pass
@@ -144,5 +148,32 @@ class ObjectRenderer:
         x = rect.width - 4
         y = 4
         pygame.draw.circle(overlay, color, (x, y), radius)
+
+        screen.blit(overlay, (rect.x, rect.y))
+
+    def draw_tree_sprout(self, screen: pygame.Surface, rect: pygame.Rect, alpha: float) -> None:
+        if rect.width < 4 or rect.height < 4 or alpha <= 0.0:
+            return
+
+        overlay = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
+        color = (*SPROUT_COLOR, int(255 * alpha))
+
+        stem_bottom = (rect.width // 2, rect.height - 2)
+        stem_top = (rect.width // 2, max(1, rect.height // 3))
+        pygame.draw.line(overlay, color, stem_bottom, stem_top, 2)
+
+        leaf_radius = max(1, rect.width // 6)
+        pygame.draw.circle(
+            overlay,
+            color,
+            (max(1, rect.width // 2 - leaf_radius), max(1, rect.height // 3)),
+            leaf_radius,
+        )
+        pygame.draw.circle(
+            overlay,
+            color,
+            (min(rect.width - 2, rect.width // 2 + leaf_radius), max(1, rect.height // 3)),
+            leaf_radius,
+        )
 
         screen.blit(overlay, (rect.x, rect.y))

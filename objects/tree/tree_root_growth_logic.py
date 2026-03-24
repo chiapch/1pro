@@ -49,7 +49,7 @@ def process_tree_root_growth(tree, dt: float, world, cell_x: int, cell_y: int) -
 
 def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
     enough_for_growth = tree.last_growth_paid > 0.0
-    if enough_for_growth:
+    if not enough_for_growth:
         return
 
     tip_roots = get_tip_roots(tree, world)
