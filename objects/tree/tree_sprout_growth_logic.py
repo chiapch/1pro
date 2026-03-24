@@ -115,9 +115,6 @@ def convert_sprout_to_tree(sprout: TreeSprout, world) -> None:
         root_network_id=sprout.root_network_id,
     )
 
-    new_tree.root_positions.append((sprout.cell_x, sprout.cell_y))
-    new_tree.water_buffer = 0.15
-
     new_root = TreeRoot(
         id=next_tree_root_id(),
         parent_tree_id=new_tree.id,
@@ -133,6 +130,8 @@ def convert_sprout_to_tree(sprout: TreeSprout, world) -> None:
         growth_direction=(0, 1),
         root_network_id=sprout.root_network_id,
     )
+    new_tree.register_root(new_root)
+    new_tree.water_buffer = 0.15
 
     new_tree.has_active_sprout = False
 

@@ -19,16 +19,29 @@ def recalculate_tree_water_needs(tree) -> None:
 def collect_water_from_roots(tree, world, dt: float) -> float:
     total = 0.0
 
+    if len(tree.root_objects) != len(tree.root_positions):
+        tree.root_objects = _rebuild_root_cache(tree, world)
+
+    for root in tree.root_objects:
+        cell = world.get_cell(root.cell_x, root.cell_y)
+        if cell is None:
+            continue
+        total += root.absorb_water(cell.ground_layer, dt)
+
+    return total
+
+
+def _rebuild_root_cache(tree, world) -> list[TreeRoot]:
+    roots: list[TreeRoot] = []
     for root_x, root_y in tree.root_positions:
         cell = world.get_cell(root_x, root_y)
         if cell is None:
             continue
-
         for obj in cell.ground_layer.get_objects():
             if isinstance(obj, TreeRoot) and obj.parent_tree_id == tree.id:
-                total += obj.absorb_water(cell.ground_layer, dt)
-
-    return total
+                roots.append(obj)
+                break
+    return roots
 
 
 def process_tree_water(tree, dt: float, world) -> None:

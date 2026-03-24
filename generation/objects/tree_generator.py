@@ -37,7 +37,7 @@ def add_root(
     cell = world.get_cell(x, y)
     if cell is not None:
         cell.add_object_to_layer("ground", root)
-    tree.root_positions.append((x, y))
+    tree.register_root(root)
     return root_id
 
 

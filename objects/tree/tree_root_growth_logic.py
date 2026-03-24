@@ -233,4 +233,4 @@ def spawn_child_root(tree, parent_root: TreeRoot, target, world, branch_order: i
     )
 
     cell.add_object_to_layer("ground", new_root)
-    tree.root_positions.append((nx, ny))
+    tree.register_root(new_root)

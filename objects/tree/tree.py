@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from objects.world_object import WorldObject
 from objects.tree.tree_water_logic import process_tree_water
+from objects.tree.tree_root import TreeRoot
 from objects.tree.tree_growth_logic import process_tree_growth
 from objects.tree.tree_root_growth_logic import process_tree_root_growth
 from objects.tree.tree_canopy_logic import (
@@ -47,6 +48,7 @@ class Tree(WorldObject):
     leaf_regrow_modifiers: dict[str, float] = field(default_factory=dict)
 
     root_positions: list[tuple[int, int]] = field(default_factory=list)
+    root_objects: list[TreeRoot] = field(default_factory=list)
 
     last_water_income: float = 0.0
     water_buffer: float = 0.0
@@ -151,6 +153,7 @@ class Tree(WorldObject):
         self.leaf_regrow_modifiers = {}
 
         self.root_positions = []
+        self.root_objects = []
 
         self.last_water_income = 0.0
         self.water_buffer_capacity = round(
@@ -255,3 +258,7 @@ class Tree(WorldObject):
             process_tree_reproduction(self, dt, world)
         with monitor.measure("tree.canopy"):
             process_tree_canopy(self, dt, world, cell_x, cell_y)
+
+    def register_root(self, root: TreeRoot) -> None:
+        self.root_positions.append((root.cell_x, root.cell_y))
+        self.root_objects.append(root)
