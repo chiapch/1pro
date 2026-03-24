@@ -1,8 +1,6 @@
 import pygame
 
 from config import (
-    WORLD_WIDTH,
-    WORLD_HEIGHT,
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     FPS,
@@ -35,6 +33,7 @@ from generation import generate_world
 from time_system import TimeController
 from controllers.window_resize_controller import WindowResizeController
 from controllers.window_drag_controller import WindowDragController
+from diagnostics import PerfMonitor
 
 
 class Application:
@@ -48,10 +47,12 @@ class Application:
         self.small_font = pygame.font.SysFont("arial", 18)
 
         self.state = AppState()
+        self.perf_monitor = PerfMonitor(enabled=False)
 
         register_all_tags()
 
         self.world = WorldGrid()
+        self.world.perf_monitor = self.perf_monitor
         generate_world(self.world)
 
         self.time_controller = TimeController()
@@ -89,9 +90,11 @@ class Application:
         self.state.hovered_cell = self.screen_to_cell(mx, my)
 
     def update(self, real_dt: float) -> None:
-        simulation_dt = self.time_controller.update(real_dt)
-        self.world.update(simulation_dt)
-        self.update_hover()
+        with self.perf_monitor.measure("app.update.total"):
+            simulation_dt = self.time_controller.update(real_dt)
+            with self.perf_monitor.measure("world.update"):
+                self.world.update(simulation_dt)
+            self.update_hover()
 
     def draw_world_area(self) -> None:
         pygame.draw.rect(self.screen, WORLD_VIEW_BG_COLOR, self.viewport.rect)
@@ -100,13 +103,12 @@ class Application:
         old_clip = self.screen.get_clip()
         self.screen.set_clip(self.viewport.rect)
 
-        for y in range(WORLD_HEIGHT):
-            for x in range(WORLD_WIDTH):
+        x_start, x_end, y_start, y_end = self.camera.get_visible_cell_bounds()
+
+        for y in range(y_start, y_end + 1):
+            for x in range(x_start, x_end + 1):
                 cell = self.world.get_cell(x, y)
                 rect = self.camera.get_cell_rect(x, y)
-
-                if not rect.colliderect(self.viewport.rect):
-                    continue
 
                 color = CELL_COLOR
 
@@ -131,14 +133,19 @@ class Application:
         self.screen.set_clip(old_clip)
 
     def draw(self) -> None:
-        self.screen.fill(BG_COLOR)
-        self.draw_world_area()
-        self.ui_manager.draw_all()
-        pygame.display.flip()
+        with self.perf_monitor.measure("app.draw.total"):
+            self.screen.fill(BG_COLOR)
+            with self.perf_monitor.measure("draw.world"):
+                self.draw_world_area()
+            with self.perf_monitor.measure("draw.ui"):
+                self.ui_manager.draw_all()
+            pygame.display.flip()
 
     def run(self) -> None:
         while True:
             real_dt = self.clock.tick(FPS) / 1000.0
+            self.perf_monitor.begin_frame()
             self.input_router.handle_events()
             self.update(real_dt)
             self.draw()
+            self.perf_monitor.end_frame()

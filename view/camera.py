@@ -95,3 +95,15 @@ class Camera:
         screen_x = self.viewport_rect.x + self.offset_x + x * self.cell_size
         screen_y = self.viewport_rect.y + self.offset_y + y * self.cell_size
         return pygame.Rect(screen_x, screen_y, self.cell_size, self.cell_size)
+
+    def get_visible_cell_bounds(self) -> tuple[int, int, int, int]:
+        left = (-self.offset_x) // self.cell_size
+        top = (-self.offset_y) // self.cell_size
+        right = (self.viewport_rect.width - self.offset_x - 1) // self.cell_size
+        bottom = (self.viewport_rect.height - self.offset_y - 1) // self.cell_size
+
+        x_start = max(0, int(left))
+        y_start = max(0, int(top))
+        x_end = min(self.world_width - 1, int(right))
+        y_end = min(self.world_height - 1, int(bottom))
+        return x_start, x_end, y_start, y_end
