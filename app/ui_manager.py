@@ -76,7 +76,7 @@ class UIManager:
         app.screen.blit(title, (20, SCREEN_HEIGHT - 110))
 
         hint1 = app.small_font.render(
-            "Q — теги | X — объекты | L — слои | T — время | V — видимость слоев | F3 — perf | ESC — закрыть",
+            "Q — теги | X — объекты | L — слои | T — время | V — видимость слоев | F3/F6 — perf | ESC — закрыть",
             True,
             SUBTEXT_COLOR,
         )
@@ -104,6 +104,13 @@ class UIManager:
         )
         app.screen.blit(zoom_txt, (720, SCREEN_HEIGHT - 30))
 
+        perf_status = app.small_font.render(
+            f"perf: {'ON' if app.perf_monitor.enabled else 'OFF'} (F3/F6)",
+            True,
+            TEXT_COLOR if app.perf_monitor.enabled else SUBTEXT_COLOR,
+        )
+        app.screen.blit(perf_status, (720, SCREEN_HEIGHT - 54))
+
         if app.state.hovered_cell is not None:
             hover_txt = app.small_font.render(
                 f"hover: x={app.state.hovered_cell.x}, y={app.state.hovered_cell.y}, objects={len(app.state.hovered_cell.get_all_objects())}",
@@ -117,6 +124,10 @@ class UIManager:
             app.screen.blit(perf_title, (20, 12))
 
             top_sections = app.perf_monitor.get_top_sections(top_n=5)
+            if not top_sections:
+                collecting = app.small_font.render("collecting...", True, SUBTEXT_COLOR)
+                app.screen.blit(collecting, (20, 34))
+
             for idx, (section, ms) in enumerate(top_sections):
                 row = app.small_font.render(
                     f"{idx + 1}. {section}: {ms:.2f}",
