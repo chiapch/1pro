@@ -1,0 +1,1 @@
+from generation.world_generator import generate_world

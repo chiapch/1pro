@@ -1,0 +1,1 @@
+from ui.object_formatters.object_info_formatter import format_object_info
