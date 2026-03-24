@@ -9,8 +9,19 @@ def find_support_root_for_sprout(sprout: TreeSprout, world):
     if cell is None:
         return None
 
+    if sprout.origin_root_id is not None:
+        for obj in cell.ground_layer.get_objects():
+            if isinstance(obj, TreeRoot) and obj.id == sprout.origin_root_id:
+                return obj
+
     for obj in cell.ground_layer.get_objects():
-        if isinstance(obj, TreeRoot) and obj.parent_tree_id == sprout.parent_tree_id:
+        if not isinstance(obj, TreeRoot):
+            continue
+
+        if obj.parent_tree_id == sprout.parent_tree_id:
+            return obj
+
+        if sprout.root_network_id is not None and obj.root_network_id == sprout.root_network_id:
             return obj
 
     return None
@@ -25,7 +36,14 @@ def process_tree_sprout_growth(sprout: TreeSprout, dt: float, world) -> None:
     root = find_support_root_for_sprout(sprout, world)
     incoming = 0.0
     if root is not None:
-        incoming = root.last_transferred * 0.5
+        incoming = root.last_transferred * 0.7
+
+    cell = world.get_cell(sprout.cell_x, sprout.cell_y)
+    if cell is not None and incoming <= 0.0:
+        direct_take = min(cell.ground_layer.moisture, 0.0035 * dt)
+        if direct_take > 0.0:
+            cell.ground_layer.set_moisture(cell.ground_layer.moisture - direct_take)
+            incoming += direct_take
 
     sprout.last_support_income = round(incoming, 5)
 
@@ -59,6 +77,9 @@ def process_tree_sprout_growth(sprout: TreeSprout, dt: float, world) -> None:
 
         if sprout.health <= 0.0:
             sprout.alive = False
+            cell = world.get_cell(sprout.cell_x, sprout.cell_y)
+            if cell is not None:
+                cell.remove_object_from_layer("standing", sprout)
             return
 
     if sprout.growth_progress >= 1.0:

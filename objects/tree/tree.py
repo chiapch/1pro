@@ -69,6 +69,7 @@ class Tree(WorldObject):
     sprout_check_interval: float = 12.0
     sprout_spawn_chance: float = 0.18
     has_active_sprout: bool = False
+    max_active_sprouts: int = 3
     _sprout_growth_progress: float = 0.0
 
     _branch_drop_progress: float = 0.0
@@ -145,8 +146,11 @@ class Tree(WorldObject):
         self.root_positions = []
 
         self.last_water_income = 0.0
-        self.water_buffer = 0.25
-        self.water_buffer_capacity = 1.0
+        self.water_buffer_capacity = round(
+            0.25 + self.height * 0.03 + self.trunk_thickness * 0.08,
+            4,
+        )
+        self.water_buffer = round(self.water_buffer_capacity * 0.55, 4)
 
         self.maintenance_water_need_per_tick = 0.0
         self.growth_water_need_per_tick = 0.0
@@ -164,6 +168,7 @@ class Tree(WorldObject):
         self.sprout_check_interval = 12.0
         self.sprout_spawn_chance = 0.18
         self.has_active_sprout = False
+        self.max_active_sprouts = 3
         self._sprout_growth_progress = 0.0
 
         self._branch_drop_progress = 0.0
