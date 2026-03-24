@@ -9,8 +9,19 @@ def find_support_root_for_sprout(sprout: TreeSprout, world):
     if cell is None:
         return None
 
+    if sprout.origin_root_id is not None:
+        for obj in cell.ground_layer.get_objects():
+            if isinstance(obj, TreeRoot) and obj.id == sprout.origin_root_id:
+                return obj
+
     for obj in cell.ground_layer.get_objects():
-        if isinstance(obj, TreeRoot) and obj.parent_tree_id == sprout.parent_tree_id:
+        if not isinstance(obj, TreeRoot):
+            continue
+
+        if obj.parent_tree_id == sprout.parent_tree_id:
+            return obj
+
+        if sprout.root_network_id is not None and obj.root_network_id == sprout.root_network_id:
             return obj
 
     return None
@@ -25,7 +36,14 @@ def process_tree_sprout_growth(sprout: TreeSprout, dt: float, world) -> None:
     root = find_support_root_for_sprout(sprout, world)
     incoming = 0.0
     if root is not None:
-        incoming = root.last_transferred * 0.5
+        incoming = root.last_transferred * 0.7
+
+    cell = world.get_cell(sprout.cell_x, sprout.cell_y)
+    if cell is not None and incoming <= 0.0:
+        direct_take = min(cell.ground_layer.moisture, 0.0035 * dt)
+        if direct_take > 0.0:
+            cell.ground_layer.set_moisture(cell.ground_layer.moisture - direct_take)
+            incoming += direct_take
 
     sprout.last_support_income = round(incoming, 5)
 
@@ -112,6 +130,19 @@ def convert_sprout_to_tree(sprout: TreeSprout, world) -> None:
 
     new_tree.has_active_sprout = False
 
+    parent_tree = find_parent_tree(sprout, world)
+    if parent_tree is not None:
+        parent_tree.has_active_sprout = False
+
     cell.remove_object_from_layer("standing", sprout)
     cell.add_object_to_layer("standing", new_tree)
     cell.add_object_to_layer("ground", new_root)
+
+
+def find_parent_tree(sprout: TreeSprout, world):
+    for row in world.cells:
+        for cell in row:
+            for obj in cell.standing_layer.get_objects():
+                if isinstance(obj, Tree) and obj.id == sprout.parent_tree_id:
+                    return obj
+    return None
