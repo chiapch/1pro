@@ -67,12 +67,14 @@ class Tree(WorldObject):
     max_root_growth_attempts_per_cycle: int = 24
     max_new_roots_per_cycle: int = 3
     max_root_count: int = 1200
+    max_root_growth_cycles_per_update: int = 2
     _root_growth_progress: float = 0.0
 
     sprout_check_interval: float = 12.0
     sprout_spawn_chance: float = 0.18
     has_active_sprout: bool = False
     max_active_sprouts: int = 3
+    max_sprout_checks_per_update: int = 2
     active_sprout_count: int = 0
     _sprout_growth_progress: float = 0.0
 
@@ -80,6 +82,7 @@ class Tree(WorldObject):
     _branch_regrow_progress: float = 0.0
     _leaf_drop_progress: float = 0.0
     _leaf_regrow_progress: float = 0.0
+    max_canopy_checks_per_update: int = 3
 
     last_canopy_event: str = "none"
     last_leaf_drop_roll: float = -1.0
@@ -170,12 +173,14 @@ class Tree(WorldObject):
         self.max_root_growth_attempts_per_cycle = 24
         self.max_new_roots_per_cycle = 3
         self.max_root_count = 1200
+        self.max_root_growth_cycles_per_update = 2
         self._root_growth_progress = 0.0
 
         self.sprout_check_interval = 12.0
         self.sprout_spawn_chance = 0.18
         self.has_active_sprout = False
         self.max_active_sprouts = 3
+        self.max_sprout_checks_per_update = 2
         self.active_sprout_count = 0
         self._sprout_growth_progress = 0.0
 
@@ -183,6 +188,7 @@ class Tree(WorldObject):
         self._branch_regrow_progress = 0.0
         self._leaf_drop_progress = 0.0
         self._leaf_regrow_progress = 0.0
+        self.max_canopy_checks_per_update = 3
 
         self.last_canopy_event = "none"
         self.last_leaf_drop_roll = -1.0

@@ -43,9 +43,16 @@ def process_tree_root_growth(tree, dt: float, world, cell_x: int, cell_y: int) -
     tree._root_growth_progress += dt
 
     interval = get_effective_root_growth_interval(tree)
-    while tree._root_growth_progress >= interval:
+    cycles_done = 0
+    while (
+        tree._root_growth_progress >= interval
+        and cycles_done < tree.max_root_growth_cycles_per_update
+    ):
         tree._root_growth_progress -= interval
         process_root_growth_step(tree, world, cell_x, cell_y)
+        cycles_done += 1
+
+    tree._root_growth_progress = min(tree._root_growth_progress, interval)
 
 
 def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:

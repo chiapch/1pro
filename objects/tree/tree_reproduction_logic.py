@@ -8,9 +8,19 @@ from objects.tree.id_generator import next_tree_sprout_id
 def process_tree_reproduction(tree, dt: float, world) -> None:
     tree._sprout_growth_progress += dt
 
-    while tree._sprout_growth_progress >= tree.sprout_check_interval:
+    checks_done = 0
+    while (
+        tree._sprout_growth_progress >= tree.sprout_check_interval
+        and checks_done < tree.max_sprout_checks_per_update
+    ):
         tree._sprout_growth_progress -= tree.sprout_check_interval
         try_spawn_sprout_from_roots(tree, world)
+        checks_done += 1
+
+    tree._sprout_growth_progress = min(
+        tree._sprout_growth_progress,
+        tree.sprout_check_interval,
+    )
 
 
 def try_spawn_sprout_from_roots(tree, world) -> bool:
