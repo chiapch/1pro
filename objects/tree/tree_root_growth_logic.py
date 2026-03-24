@@ -42,8 +42,9 @@ def has_own_root_in_cell(tree, cell) -> bool:
 def process_tree_root_growth(tree, dt: float, world, cell_x: int, cell_y: int) -> None:
     tree._root_growth_progress += dt
 
-    while tree._root_growth_progress >= tree.root_growth_check_interval:
-        tree._root_growth_progress -= tree.root_growth_check_interval
+    interval = get_effective_root_growth_interval(tree)
+    while tree._root_growth_progress >= interval:
+        tree._root_growth_progress -= interval
         process_root_growth_step(tree, world, cell_x, cell_y)
 
 
@@ -59,12 +60,17 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
 
     random.shuffle(tip_roots)
 
-    tips_to_process = min(3, len(tip_roots))
+    attempts_left = min(tree.max_root_growth_attempts_per_cycle, len(tip_roots))
     processed = 0
 
     for tip in tip_roots:
-        if processed >= tips_to_process:
+        if attempts_left <= 0:
             break
+
+        if processed >= tree.max_new_roots_per_cycle:
+            break
+
+        attempts_left -= 1
 
         if random.random() > tree.root_growth_base_chance:
             continue
@@ -72,6 +78,12 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
         grew = grow_from_root_tip(tree, tip, world)
         if grew:
             processed += 1
+
+
+def get_effective_root_growth_interval(tree) -> float:
+    root_count = len(tree.root_positions)
+    load_penalty = min(12.0, root_count * 0.04)
+    return tree.root_growth_check_interval + load_penalty
 
 
 def grow_from_root_tip(tree, root: TreeRoot, world) -> bool:

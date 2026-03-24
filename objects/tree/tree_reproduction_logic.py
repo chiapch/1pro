@@ -14,7 +14,7 @@ def process_tree_reproduction(tree, dt: float, world) -> None:
 
 
 def try_spawn_sprout_from_roots(tree, world) -> bool:
-    if count_active_sprouts(tree, world) >= tree.max_active_sprouts:
+    if tree.active_sprout_count >= tree.max_active_sprouts:
         return False
 
     if tree.health < 0.8:
@@ -47,19 +47,10 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
             cell_y=root.cell_y,
         )
         cell.add_object_to_layer("standing", sprout)
+        tree.active_sprout_count += 1
         return True
 
     return False
-
-
-def count_active_sprouts(tree, world) -> int:
-    count = 0
-    for row in world.cells:
-        for cell in row:
-            for obj in cell.standing_layer.get_objects():
-                if isinstance(obj, TreeSprout) and obj.parent_tree_id == tree.id and obj.alive:
-                    count += 1
-    return count
 
 
 def get_tip_roots_for_sprout(tree, world):

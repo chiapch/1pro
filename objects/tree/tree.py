@@ -64,12 +64,15 @@ class Tree(WorldObject):
 
     root_growth_check_interval: float = 8.0
     root_growth_base_chance: float = 0.35
+    max_root_growth_attempts_per_cycle: int = 24
+    max_new_roots_per_cycle: int = 3
     _root_growth_progress: float = 0.0
 
     sprout_check_interval: float = 12.0
     sprout_spawn_chance: float = 0.18
     has_active_sprout: bool = False
     max_active_sprouts: int = 3
+    active_sprout_count: int = 0
     _sprout_growth_progress: float = 0.0
 
     _branch_drop_progress: float = 0.0
@@ -163,12 +166,15 @@ class Tree(WorldObject):
 
         self.root_growth_check_interval = 8.0
         self.root_growth_base_chance = 0.35
+        self.max_root_growth_attempts_per_cycle = 24
+        self.max_new_roots_per_cycle = 3
         self._root_growth_progress = 0.0
 
         self.sprout_check_interval = 12.0
         self.sprout_spawn_chance = 0.18
         self.has_active_sprout = False
         self.max_active_sprouts = 3
+        self.active_sprout_count = 0
         self._sprout_growth_progress = 0.0
 
         self._branch_drop_progress = 0.0
