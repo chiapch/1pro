@@ -49,6 +49,9 @@ def process_tree_root_growth(tree, dt: float, world, cell_x: int, cell_y: int) -
 
 
 def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
+    if len(tree.root_positions) >= tree.max_root_count:
+        return
+
     enough_for_growth = tree.last_growth_paid > 0.0
     if not enough_for_growth:
         return
@@ -198,6 +201,9 @@ def weighted_choice(candidates):
 
 
 def spawn_child_root(tree, parent_root: TreeRoot, target, world, branch_order: int) -> None:
+    if len(tree.root_positions) >= tree.max_root_count:
+        return
+
     nx = target["x"]
     ny = target["y"]
     cell = target["cell"]

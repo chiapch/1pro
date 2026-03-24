@@ -27,6 +27,9 @@ class PerfMonitor:
 
     def toggle(self) -> bool:
         self.enabled = not self.enabled
+        if self.enabled:
+            self.current_frame_sections.clear()
+            self.frame_start = time.perf_counter()
         return self.enabled
 
     def begin_frame(self) -> None:
