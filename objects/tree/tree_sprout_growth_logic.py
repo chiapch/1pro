@@ -1,7 +1,7 @@
 from objects.tree.tree import Tree
 from objects.tree.tree_root import TreeRoot
 from objects.tree.tree_sprout import TreeSprout
-from objects.tree.id_generator import next_tree_id, next_tree_root_id
+from objects.tree.id_generator import next_tree_id
 
 
 def find_support_root_for_sprout(sprout: TreeSprout, world):
@@ -115,22 +115,9 @@ def convert_sprout_to_tree(sprout: TreeSprout, world) -> None:
         root_network_id=sprout.root_network_id,
     )
 
-    new_root = TreeRoot(
-        id=next_tree_root_id(),
-        parent_tree_id=new_tree.id,
-        cell_x=sprout.cell_x,
-        cell_y=sprout.cell_y,
-        parent_root_id=sprout.origin_root_id,
-        strength=1.0,
-        uptake_capacity_per_tick=0.03,
-        self_need_per_tick=0.005,
-        depth=0,
-        branch_order=0,
-        is_tip=True,
-        growth_direction=(0, 1),
-        root_network_id=sprout.root_network_id,
-    )
-    new_tree.register_root(new_root)
+    support_root = find_support_root_for_sprout(sprout, world)
+    if support_root is not None:
+        new_tree.support_roots.append(support_root)
     new_tree.water_buffer = 0.15
 
     new_tree.has_active_sprout = False
@@ -141,7 +128,6 @@ def convert_sprout_to_tree(sprout: TreeSprout, world) -> None:
 
     cell.remove_object_from_layer("standing", sprout)
     cell.add_object_to_layer("standing", new_tree)
-    cell.add_object_to_layer("ground", new_root)
 
 
 def find_parent_tree(sprout: TreeSprout, world):

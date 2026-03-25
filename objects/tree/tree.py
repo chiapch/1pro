@@ -49,6 +49,7 @@ class Tree(WorldObject):
 
     root_positions: list[tuple[int, int]] = field(default_factory=list)
     root_objects: list[TreeRoot] = field(default_factory=list)
+    support_roots: list[TreeRoot] = field(default_factory=list)
 
     last_water_income: float = 0.0
     water_buffer: float = 0.0
@@ -157,6 +158,7 @@ class Tree(WorldObject):
 
         self.root_positions = []
         self.root_objects = []
+        self.support_roots = []
 
         self.last_water_income = 0.0
         self.water_buffer_capacity = round(

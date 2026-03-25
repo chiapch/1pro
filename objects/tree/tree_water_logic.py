@@ -27,7 +27,13 @@ def collect_water_from_roots(tree, world, dt: float) -> float:
     if len(tree.root_objects) != len(tree.root_positions):
         tree.root_objects = _rebuild_root_cache(tree, world)
 
-    for root in tree.root_objects:
+    all_roots = list(tree.root_objects)
+    for root in tree.support_roots:
+        if any(existing.id == root.id for existing in all_roots):
+            continue
+        all_roots.append(root)
+
+    for root in all_roots:
         cell = world.get_cell(root.cell_x, root.cell_y)
         if cell is None:
             continue

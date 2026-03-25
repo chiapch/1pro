@@ -14,17 +14,11 @@ CARDINAL_DIRECTIONS = [
 
 
 def get_tree_roots(tree, world) -> list[TreeRoot]:
-    roots: list[TreeRoot] = []
-
-    for root_x, root_y in tree.root_positions:
-        cell = world.get_cell(root_x, root_y)
-        if cell is None:
+    roots: list[TreeRoot] = list(tree.root_objects)
+    for support_root in tree.support_roots:
+        if any(existing.id == support_root.id for existing in roots):
             continue
-
-        for obj in cell.ground_layer.get_objects():
-            if isinstance(obj, TreeRoot) and obj.parent_tree_id == tree.id:
-                roots.append(obj)
-
+        roots.append(support_root)
     return roots
 
 
@@ -32,9 +26,9 @@ def get_tip_roots(tree, world) -> list[TreeRoot]:
     return [root for root in get_tree_roots(tree, world) if root.is_tip]
 
 
-def has_own_root_in_cell(tree, cell) -> bool:
+def has_root_in_cell(cell) -> bool:
     for obj in cell.ground_layer.get_objects():
-        if isinstance(obj, TreeRoot) and obj.parent_tree_id == tree.id:
+        if isinstance(obj, TreeRoot):
             return True
     return False
 
@@ -149,7 +143,7 @@ def choose_growth_targets_for_root(tree, root: TreeRoot, world):
     neighbors = get_neighbor_cells(world, root.cell_x, root.cell_y)
 
     for nx, ny, cell in neighbors:
-        if has_own_root_in_cell(tree, cell):
+        if has_root_in_cell(cell):
             continue
 
         if cell.ground_layer.moisture < 0.08:
