@@ -60,8 +60,10 @@ def process_tree_water(tree, dt: float, world) -> None:
 
     if hasattr(world, "pull_network_water"):
         network_key = tree.root_network_id or tree.id
-        capacity_left = max(0.0, tree.water_buffer_capacity - tree.water_buffer)
-        incoming = world.pull_network_water(network_key, capacity_left)
+        demand = (tree.maintenance_water_need_per_tick + tree.growth_water_need_per_tick) * dt
+        reserve_target = demand * 1.5
+        requested = max(0.0, reserve_target - tree.water_buffer)
+        incoming = world.pull_network_water(network_key, requested)
     else:
         incoming = collect_water_from_roots(tree, world, dt)
 

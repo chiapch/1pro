@@ -53,6 +53,9 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
     if len(tree.root_positions) >= tree.max_root_count:
         return
 
+    if is_tree_water_saturated(tree):
+        return
+
     enough_for_growth = tree.last_growth_paid > 0.0
     if not enough_for_growth:
         return
@@ -95,6 +98,14 @@ def get_effective_root_growth_chance(tree) -> float:
     size_penalty = max(0.08, 1.0 - (len(tree.root_positions) / max(1, tree.max_root_count)))
     health_factor = 0.5 + max(0.0, min(1.0, tree.health)) * 0.5
     return max(0.02, tree.root_growth_base_chance * size_penalty * health_factor)
+
+
+def is_tree_water_saturated(tree) -> bool:
+    demand = tree.maintenance_water_need_per_tick + tree.growth_water_need_per_tick
+    if demand <= 0:
+        return True
+
+    return tree.last_water_income >= demand
 
 
 def grow_from_root_tip(tree, root: TreeRoot, world) -> bool:

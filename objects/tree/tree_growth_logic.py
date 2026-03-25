@@ -1,4 +1,6 @@
 def process_tree_growth(tree, dt: float) -> None:
+    tree.age += dt * 0.2
+
     maintenance_need = tree.maintenance_water_need_per_tick * dt
     growth_need = tree.growth_water_need_per_tick * dt
 
