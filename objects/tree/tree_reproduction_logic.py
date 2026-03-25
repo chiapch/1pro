@@ -33,13 +33,15 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
     water_ratio = 0.0
     if tree.water_buffer_capacity > 0:
         water_ratio = tree.water_buffer / tree.water_buffer_capacity
-    if water_ratio < tree.min_reproduction_water_ratio:
+    demand = tree.maintenance_water_need_per_tick + tree.growth_water_need_per_tick
+    has_network_supply = tree.last_water_income >= max(0.0001, demand * 0.6)
+    if water_ratio < tree.min_reproduction_water_ratio and not has_network_supply:
         return False
 
     if tree.health < 0.8:
         return False
 
-    if tree.last_growth_paid <= 0.0:
+    if tree.last_growth_paid <= 0.0 and not has_network_supply:
         return False
 
     candidate_roots = get_tip_roots_for_sprout(tree, world)

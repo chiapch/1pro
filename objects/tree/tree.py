@@ -74,10 +74,10 @@ class Tree(WorldObject):
     max_root_growth_cycles_per_update: int = 2
     _root_growth_progress: float = 0.0
 
-    sprout_check_interval: float = 12.0
-    sprout_spawn_chance: float = 0.18
+    sprout_check_interval: float = 8.0
+    sprout_spawn_chance: float = 0.28
     min_reproduction_age: float = 12.0
-    min_reproduction_water_ratio: float = 0.45
+    min_reproduction_water_ratio: float = 0.15
     has_active_sprout: bool = False
     max_active_sprouts: int = 3
     max_sprout_checks_per_update: int = 2
@@ -185,10 +185,10 @@ class Tree(WorldObject):
         self.max_root_growth_cycles_per_update = 2
         self._root_growth_progress = 0.0
 
-        self.sprout_check_interval = 12.0
-        self.sprout_spawn_chance = 0.18
+        self.sprout_check_interval = 8.0
+        self.sprout_spawn_chance = 0.28
         self.min_reproduction_age = 12.0
-        self.min_reproduction_water_ratio = 0.45
+        self.min_reproduction_water_ratio = 0.15
         self.has_active_sprout = False
         self.max_active_sprouts = 3
         self.max_sprout_checks_per_update = 2

@@ -63,7 +63,7 @@ def process_tree_sprout_growth(sprout: TreeSprout, dt: float, world) -> None:
         if growth_need > 0 and available_for_growth > 0:
             growth_ratio = min(1.0, available_for_growth / growth_need)
             sprout.last_growth_paid = round(min(growth_need, available_for_growth), 5)
-            sprout.growth_progress += 0.12 * dt * growth_ratio
+            sprout.growth_progress += 0.08 * dt * growth_ratio
     else:
         deficit_ratio = 1.0
         if support_need > 0:
