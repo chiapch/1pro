@@ -37,26 +37,22 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
     water_ratio = 0.0
     if tree.water_buffer_capacity > 0:
         water_ratio = tree.water_buffer / tree.water_buffer_capacity
-    demand = tree.maintenance_water_need_per_tick + tree.growth_water_need_per_tick
-    has_network_supply = tree.last_water_income >= max(0.0001, demand * 0.6)
-    if water_ratio < tree.min_reproduction_water_ratio and not has_network_supply:
+    has_recent_growth_water = tree.last_growth_paid > 0.0
+    if water_ratio < tree.min_reproduction_water_ratio and not has_recent_growth_water:
         return False
 
     if tree.health < 0.8:
         return False
 
-    if tree.last_growth_paid <= 0.0 and not has_network_supply:
+    if tree.last_growth_paid <= 0.0:
         return False
 
     candidate_roots = get_tip_roots_for_sprout(tree, world)
     random.shuffle(candidate_roots)
 
     for root in candidate_roots:
-        cell = world.get_cell(root.cell_x, root.cell_y)
-        if cell is None:
-            continue
-
-        if has_blocking_standing_object(cell):
+        spawn_cell = find_sprout_spawn_cell(world, root.cell_x, root.cell_y)
+        if spawn_cell is None:
             continue
 
         nearby_trees = count_nearby_trees(
@@ -82,10 +78,10 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
             origin_root_id=root.id,
             root_network_id=tree.root_network_id,
             species_id=tree.species_id,
-            cell_x=root.cell_x,
-            cell_y=root.cell_y,
+            cell_x=spawn_cell.x,
+            cell_y=spawn_cell.y,
         )
-        cell.add_object_to_layer("standing", sprout)
+        spawn_cell.add_object_to_layer("standing", sprout)
         tree.active_sprout_count += 1
         return True
 
@@ -112,6 +108,24 @@ def has_blocking_standing_object(cell) -> bool:
         if obj.object_type in ("tree", "tree_sprout"):
             return True
     return False
+
+
+def find_sprout_spawn_cell(world, center_x: int, center_y: int):
+    candidates = []
+
+    for y in range(center_y - 1, center_y + 2):
+        for x in range(center_x - 1, center_x + 2):
+            cell = world.get_cell(x, y)
+            if cell is None:
+                continue
+            if has_blocking_standing_object(cell):
+                continue
+            candidates.append(cell)
+
+    if not candidates:
+        return None
+
+    return random.choice(candidates)
 
 
 def count_nearby_trees(world, center_x: int, center_y: int, radius: int) -> int:
