@@ -82,7 +82,8 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
 
         attempts_left -= 1
 
-        if random.random() > tree.root_growth_base_chance:
+        growth_chance = get_effective_root_growth_chance(tree)
+        if random.random() > growth_chance:
             continue
 
         grew = grow_from_root_tip(tree, tip, world)
@@ -94,6 +95,12 @@ def get_effective_root_growth_interval(tree) -> float:
     root_count = len(tree.root_positions)
     load_penalty = min(12.0, root_count * 0.04)
     return tree.root_growth_check_interval + load_penalty
+
+
+def get_effective_root_growth_chance(tree) -> float:
+    size_penalty = max(0.08, 1.0 - (len(tree.root_positions) / max(1, tree.max_root_count)))
+    health_factor = 0.5 + max(0.0, min(1.0, tree.health)) * 0.5
+    return max(0.02, tree.root_growth_base_chance * size_penalty * health_factor)
 
 
 def grow_from_root_tip(tree, root: TreeRoot, world) -> bool:

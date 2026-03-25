@@ -27,13 +27,19 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
     if tree.active_sprout_count >= tree.max_active_sprouts:
         return False
 
+    if tree.age < tree.min_reproduction_age:
+        return False
+
+    water_ratio = 0.0
+    if tree.water_buffer_capacity > 0:
+        water_ratio = tree.water_buffer / tree.water_buffer_capacity
+    if water_ratio < tree.min_reproduction_water_ratio:
+        return False
+
     if tree.health < 0.8:
         return False
 
     if tree.last_growth_paid <= 0.0:
-        return False
-
-    if random.random() > tree.sprout_spawn_chance:
         return False
 
     candidate_roots = get_tip_roots_for_sprout(tree, world)
@@ -45,6 +51,15 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
             continue
 
         if has_blocking_standing_object(cell):
+            continue
+
+        nearby_trees = count_nearby_trees(world, root.cell_x, root.cell_y, radius=3)
+        local_density_factor = max(0.0, 1.0 - (nearby_trees / 9.0))
+        effective_spawn_chance = tree.sprout_spawn_chance * local_density_factor
+        if effective_spawn_chance <= 0.0:
+            continue
+
+        if random.random() > effective_spawn_chance:
             continue
 
         sprout = TreeSprout(
@@ -83,3 +98,16 @@ def has_blocking_standing_object(cell) -> bool:
         if obj.object_type in ("tree", "tree_sprout"):
             return True
     return False
+
+
+def count_nearby_trees(world, center_x: int, center_y: int, radius: int) -> int:
+    count = 0
+    for y in range(max(0, center_y - radius), min(world.height - 1, center_y + radius) + 1):
+        for x in range(max(0, center_x - radius), min(world.width - 1, center_x + radius) + 1):
+            cell = world.get_cell(x, y)
+            if cell is None:
+                continue
+            for obj in cell.standing_layer.get_objects():
+                if obj.object_type == "tree":
+                    count += 1
+    return count
