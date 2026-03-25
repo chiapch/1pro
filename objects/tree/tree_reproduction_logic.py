@@ -4,6 +4,10 @@ from objects.tree.tree_root import TreeRoot
 from objects.tree.tree_sprout import TreeSprout
 from objects.tree.id_generator import next_tree_sprout_id
 
+SPROUT_DENSITY_RADIUS = 3
+SPROUT_DENSITY_SOFT_CAP = 24
+SPROUT_MIN_DENSITY_FACTOR = 0.15
+
 
 def process_tree_reproduction(tree, dt: float, world) -> None:
     tree._sprout_growth_progress += dt
@@ -55,8 +59,16 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
         if has_blocking_standing_object(cell):
             continue
 
-        nearby_trees = count_nearby_trees(world, root.cell_x, root.cell_y, radius=3)
-        local_density_factor = max(0.0, 1.0 - (nearby_trees / 9.0))
+        nearby_trees = count_nearby_trees(
+            world,
+            root.cell_x,
+            root.cell_y,
+            radius=SPROUT_DENSITY_RADIUS,
+        )
+        local_density_factor = max(
+            SPROUT_MIN_DENSITY_FACTOR,
+            1.0 - (nearby_trees / SPROUT_DENSITY_SOFT_CAP),
+        )
         effective_spawn_chance = tree.sprout_spawn_chance * local_density_factor
         if effective_spawn_chance <= 0.0:
             continue
