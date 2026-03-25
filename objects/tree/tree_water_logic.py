@@ -58,6 +58,12 @@ def _rebuild_root_cache(tree, world) -> list[TreeRoot]:
 def process_tree_water(tree, dt: float, world) -> None:
     recalculate_tree_water_needs(tree)
 
-    incoming = collect_water_from_roots(tree, world, dt)
+    if hasattr(world, "pull_network_water"):
+        network_key = tree.root_network_id or tree.id
+        capacity_left = max(0.0, tree.water_buffer_capacity - tree.water_buffer)
+        incoming = world.pull_network_water(network_key, capacity_left)
+    else:
+        incoming = collect_water_from_roots(tree, world, dt)
+
     tree.last_water_income = round(incoming, 5)
     tree.water_buffer = min(tree.water_buffer_capacity, tree.water_buffer + incoming)

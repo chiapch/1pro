@@ -1,5 +1,6 @@
 from world.cell import Cell
 from config import WORLD_WIDTH, WORLD_HEIGHT
+from objects.tree.tree_root import TreeRoot
 
 
 class WorldGrid:
@@ -13,6 +14,8 @@ class WorldGrid:
         self._update_tick = 0
         self._tree_update_stride = 1
         self._tree_count_cache = 0
+        self._network_water_pool: dict[str, float] = {}
+        self._network_water_inflow: dict[str, float] = {}
 
     def get_cell(self, x: int, y: int) -> Cell | None:
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -29,6 +32,8 @@ class WorldGrid:
                 for layer in cell.get_layers_in_order():
                     if hasattr(layer, "update"):
                         layer.update(dt)
+
+        self._rebuild_network_water_pool(dt)
 
         for row in self.cells:
             for cell in row:
@@ -53,6 +58,28 @@ class WorldGrid:
                                 obj.update(obj_dt, self, cell.x, cell.y)
                             except TypeError:
                                 obj.update(obj_dt)
+
+    def _rebuild_network_water_pool(self, dt: float) -> None:
+        inflow: dict[str, float] = {}
+        for row in self.cells:
+            for cell in row:
+                for obj in cell.ground_layer.get_objects():
+                    if not isinstance(obj, TreeRoot):
+                        continue
+                    network_key = obj.root_network_id or obj.parent_tree_id
+                    produced = obj.absorb_water(cell.ground_layer, dt)
+                    inflow[network_key] = inflow.get(network_key, 0.0) + produced
+
+        self._network_water_inflow = inflow
+        self._network_water_pool = dict(inflow)
+
+    def pull_network_water(self, network_id: str | None, amount: float) -> float:
+        if network_id is None or amount <= 0.0:
+            return 0.0
+        available = self._network_water_pool.get(network_id, 0.0)
+        taken = min(available, amount)
+        self._network_water_pool[network_id] = available - taken
+        return taken
 
     def _refresh_tree_update_stride(self) -> None:
         tree_count = 0
@@ -113,6 +140,8 @@ class WorldGrid:
             "world_size": {"width": self.width, "height": self.height},
             "tree_update_stride": self._tree_update_stride,
             "tree_count_cache": self._tree_count_cache,
+            "network_water_inflow_total": round(sum(self._network_water_inflow.values()), 6),
+            "network_water_pool_total": round(sum(self._network_water_pool.values()), 6),
             "objects_total": sum(layer_counts.values()),
             "non_empty_cells": non_empty_cells,
             "avg_ground_moisture": round(avg_moisture, 6),

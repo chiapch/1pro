@@ -33,17 +33,15 @@ def process_tree_sprout_growth(sprout: TreeSprout, dt: float, world) -> None:
 
     sprout.age += dt
 
-    root = find_support_root_for_sprout(sprout, world)
     incoming = 0.0
-    if root is not None:
-        incoming = root.last_transferred * 0.7
-
-    cell = world.get_cell(sprout.cell_x, sprout.cell_y)
-    if cell is not None and incoming <= 0.0:
-        direct_take = min(cell.ground_layer.moisture, 0.0035 * dt)
-        if direct_take > 0.0:
-            cell.ground_layer.set_moisture(cell.ground_layer.moisture - direct_take)
-            incoming += direct_take
+    if hasattr(world, "pull_network_water"):
+        network_key = sprout.root_network_id or sprout.parent_tree_id
+        requested = (sprout.support_need_per_tick + sprout.growth_need_per_tick) * dt
+        incoming = world.pull_network_water(network_key, requested)
+    else:
+        root = find_support_root_for_sprout(sprout, world)
+        if root is not None:
+            incoming = root.last_transferred * 0.7
 
     sprout.last_support_income = round(incoming, 5)
 
