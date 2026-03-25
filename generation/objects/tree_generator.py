@@ -26,7 +26,7 @@ def add_root(
         parent_root_id=parent_root_id,
         strength=1.0,
         uptake_capacity_per_tick=0.03,
-        self_need_per_tick=0.005,
+        self_need_per_tick=0.0015,
         depth=depth,
         branch_order=branch_order,
         is_tip=is_tip,

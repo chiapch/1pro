@@ -8,11 +8,11 @@ def recalculate_tree_water_needs(tree) -> None:
     tree._water_needs_signature = signature
 
     tree.maintenance_water_need_per_tick = round(
-        0.004 + tree.height * 0.0008 + tree.trunk_thickness * 0.0012,
+        0.002 + tree.height * 0.00045 + tree.trunk_thickness * 0.0007,
         5,
     )
     tree.growth_water_need_per_tick = round(
-        0.002 + tree.height * 0.0007 + tree.trunk_thickness * 0.0010,
+        0.001 + tree.height * 0.0004 + tree.trunk_thickness * 0.0006,
         5,
     )
     tree.water_buffer_capacity = round(

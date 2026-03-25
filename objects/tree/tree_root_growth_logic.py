@@ -225,7 +225,7 @@ def spawn_child_root(tree, parent_root: TreeRoot, target, world, branch_order: i
         parent_root_id=parent_root.id,
         strength=1.0,
         uptake_capacity_per_tick=0.03,
-        self_need_per_tick=0.005,
+        self_need_per_tick=0.0015,
         depth=parent_root.depth + 1,
         branch_order=branch_order,
         is_tip=True,

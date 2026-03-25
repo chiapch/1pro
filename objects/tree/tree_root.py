@@ -12,7 +12,7 @@ class TreeRoot(WorldObject):
     strength: float = 1.0
 
     uptake_capacity_per_tick: float = 0.03
-    self_need_per_tick: float = 0.005
+    self_need_per_tick: float = 0.0015
 
     depth: int = 0
     branch_order: int = 0
@@ -37,7 +37,7 @@ class TreeRoot(WorldObject):
         parent_root_id: str | None = None,
         strength: float = 1.0,
         uptake_capacity_per_tick: float = 0.03,
-        self_need_per_tick: float = 0.005,
+        self_need_per_tick: float = 0.0015,
         depth: int = 0,
         branch_order: int = 0,
         is_tip: bool = True,
