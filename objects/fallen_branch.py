@@ -26,7 +26,15 @@ class FallenBranch(WorldObject):
         self.rot_speed = rot_speed
         self.rot_amount = rot_amount
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, world=None, cell_x: int | None = None, cell_y: int | None = None) -> None:
         self.rot_amount += self.rot_speed * dt
         if self.rot_amount > 1.0:
             self.rot_amount = 1.0
+
+        if self.rot_amount < 1.0 or world is None or cell_x is None or cell_y is None:
+            return
+
+        cell = world.get_cell(cell_x, cell_y)
+        if cell is None:
+            return
+        cell.remove_object_from_layer("surface", self)

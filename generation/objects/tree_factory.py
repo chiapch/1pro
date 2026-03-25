@@ -10,7 +10,7 @@ def clamp(value: float, min_value: float, max_value: float) -> float:
 
 def create_tree(age: int | None = None) -> Tree:
     if age is None:
-        age = random.randint(3, 80)
+        age = random.randint(6, 28)
 
     tree_id = next_tree_id()
 

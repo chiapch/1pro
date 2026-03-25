@@ -43,21 +43,45 @@ def process_tree_canopy(tree, dt: float, world, cell_x: int, cell_y: int) -> Non
     tree._leaf_drop_progress += dt
     tree._leaf_regrow_progress += dt
 
-    while tree._branch_drop_progress >= tree.branch_drop_check_interval:
-        tree._branch_drop_progress -= tree.branch_drop_check_interval
-        try_branch_drop(tree, world, cell_x, cell_y)
+    _consume_progress_limited(
+        tree,
+        "_branch_drop_progress",
+        tree.branch_drop_check_interval,
+        tree.max_canopy_checks_per_update,
+        lambda: try_branch_drop(tree, world, cell_x, cell_y),
+    )
+    _consume_progress_limited(
+        tree,
+        "_branch_regrow_progress",
+        tree.branch_regrow_check_interval,
+        tree.max_canopy_checks_per_update,
+        lambda: try_branch_regrow(tree),
+    )
+    _consume_progress_limited(
+        tree,
+        "_leaf_drop_progress",
+        tree.leaf_drop_check_interval,
+        tree.max_canopy_checks_per_update,
+        lambda: try_leaf_drop(tree, world, cell_x, cell_y),
+    )
+    _consume_progress_limited(
+        tree,
+        "_leaf_regrow_progress",
+        tree.leaf_regrow_check_interval,
+        tree.max_canopy_checks_per_update,
+        lambda: try_leaf_regrow(tree),
+    )
 
-    while tree._branch_regrow_progress >= tree.branch_regrow_check_interval:
-        tree._branch_regrow_progress -= tree.branch_regrow_check_interval
-        try_branch_regrow(tree)
 
-    while tree._leaf_drop_progress >= tree.leaf_drop_check_interval:
-        tree._leaf_drop_progress -= tree.leaf_drop_check_interval
-        try_leaf_drop(tree, world, cell_x, cell_y)
+def _consume_progress_limited(tree, progress_attr: str, interval: float, max_checks: int, callback) -> None:
+    checks_done = 0
+    progress = getattr(tree, progress_attr)
+    while progress >= interval and checks_done < max_checks:
+        progress -= interval
+        callback()
+        checks_done += 1
 
-    while tree._leaf_regrow_progress >= tree.leaf_regrow_check_interval:
-        tree._leaf_regrow_progress -= tree.leaf_regrow_check_interval
-        try_leaf_regrow(tree)
+    setattr(tree, progress_attr, min(progress, interval))
 
 
 def try_branch_drop(tree, world, cell_x: int, cell_y: int) -> bool:

@@ -19,8 +19,8 @@ class TreeSprout(WorldObject):
     cell_y: int = 0
 
     last_support_income: float = 0.0
-    support_need_per_tick: float = 0.003
-    growth_need_per_tick: float = 0.002
+    support_need_per_tick: float = 0.0015
+    growth_need_per_tick: float = 0.001
     last_support_paid: float = 0.0
     last_growth_paid: float = 0.0
 
@@ -56,7 +56,14 @@ class TreeSprout(WorldObject):
         self.cell_y = cell_y
 
         self.last_support_income = 0.0
-        self.support_need_per_tick = 0.003
-        self.growth_need_per_tick = 0.002
+        self.support_need_per_tick = 0.0015
+        self.growth_need_per_tick = 0.001
         self.last_support_paid = 0.0
         self.last_growth_paid = 0.0
+
+    def update(self, dt: float, world, cell_x: int, cell_y: int) -> None:
+        from objects.tree.tree_sprout_growth_logic import process_tree_sprout_growth
+
+        self.cell_x = cell_x
+        self.cell_y = cell_y
+        process_tree_sprout_growth(self, dt, world)
