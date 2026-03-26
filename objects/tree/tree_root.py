@@ -8,23 +8,18 @@ class TreeRoot(WorldObject):
     parent_tree_id: str = ""
     parent_root_id: str | None = None
     root_network_id: str | None = None
-
     strength: float = 1.0
-
     uptake_capacity_per_tick: float = 0.03
     self_need_per_tick: float = 0.0015
-
     depth: int = 0
     branch_order: int = 0
     is_tip: bool = True
     growth_direction: tuple[int, int] | None = None
-
     last_cell_moisture_before: float = 0.0
     last_cell_moisture_after: float = 0.0
     last_absorbed: float = 0.0
     last_kept: float = 0.0
     last_transferred: float = 0.0
-
     cell_x: int = 0
     cell_y: int = 0
 
@@ -52,22 +47,19 @@ class TreeRoot(WorldObject):
             layer="ground",
             origin_object_id=parent_tree_id,
         )
+
         self.parent_tree_id = parent_tree_id
         self.parent_root_id = parent_root_id
         self.root_network_id = root_network_id
-
         self.cell_x = cell_x
         self.cell_y = cell_y
-
         self.strength = strength
         self.uptake_capacity_per_tick = uptake_capacity_per_tick
         self.self_need_per_tick = self_need_per_tick
-
         self.depth = depth
         self.branch_order = branch_order
         self.is_tip = is_tip
         self.growth_direction = growth_direction
-
         self.last_cell_moisture_before = 0.0
         self.last_cell_moisture_after = 0.0
         self.last_absorbed = 0.0
@@ -75,12 +67,15 @@ class TreeRoot(WorldObject):
         self.last_transferred = 0.0
 
     def absorb_water(self, ground_layer, dt: float) -> float:
-        available = max(0.0, ground_layer.moisture)
-        self.last_cell_moisture_before = round(available, 4)
+        moisture = max(0.0, float(getattr(ground_layer, "moisture", 0.0)))
+        max_moisture = max(0.0001, float(getattr(ground_layer, "max_moisture", 1.0)))
+
+        self.last_cell_moisture_before = round(moisture, 4)
 
         max_take = self.uptake_capacity_per_tick * dt
-        absorbed = min(available, max_take)
-        ground_layer.set_moisture(available - absorbed)
+        normalized_moisture = max(0.0, min(1.0, moisture / max_moisture))
+        conductivity = normalized_moisture * normalized_moisture
+        absorbed = max_take * conductivity
 
         kept = min(absorbed, self.self_need_per_tick * dt)
         transferred = max(0.0, absorbed - kept)
@@ -88,6 +83,5 @@ class TreeRoot(WorldObject):
         self.last_absorbed = round(absorbed, 4)
         self.last_kept = round(kept, 4)
         self.last_transferred = round(transferred, 4)
-        self.last_cell_moisture_after = round(ground_layer.moisture, 4)
-
+        self.last_cell_moisture_after = round(moisture, 4)
         return transferred

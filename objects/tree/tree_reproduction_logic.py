@@ -7,6 +7,8 @@ from objects.tree.id_generator import next_tree_sprout_id
 SPROUT_DENSITY_RADIUS = 3
 SPROUT_DENSITY_SOFT_CAP = 24
 SPROUT_MIN_DENSITY_FACTOR = 0.15
+MIN_ROOTS_FOR_SPROUTING = 14
+MIN_SPROUT_CELL_MOISTURE = 0.18
 
 
 def process_tree_reproduction(tree, dt: float, world) -> None:
@@ -29,6 +31,9 @@ def process_tree_reproduction(tree, dt: float, world) -> None:
 
 def try_spawn_sprout_from_roots(tree, world) -> bool:
     if tree.active_sprout_count >= tree.max_active_sprouts:
+        return False
+
+    if len(tree.root_positions) < MIN_ROOTS_FOR_SPROUTING:
         return False
 
     if tree.age < tree.min_reproduction_age:
@@ -65,7 +70,18 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
             SPROUT_MIN_DENSITY_FACTOR,
             1.0 - (nearby_trees / SPROUT_DENSITY_SOFT_CAP),
         )
-        effective_spawn_chance = tree.sprout_spawn_chance * local_density_factor
+
+        local_moisture = spawn_cell.ground_layer.moisture
+        moisture_factor = max(
+            0.0,
+            min(1.0, (local_moisture - MIN_SPROUT_CELL_MOISTURE) / (1.0 - MIN_SPROUT_CELL_MOISTURE)),
+        )
+
+        effective_spawn_chance = (
+            tree.sprout_spawn_chance
+            * local_density_factor
+            * (0.35 + 0.65 * moisture_factor)
+        )
         if effective_spawn_chance <= 0.0:
             continue
 
@@ -120,12 +136,27 @@ def find_sprout_spawn_cell(world, center_x: int, center_y: int):
                 continue
             if has_blocking_standing_object(cell):
                 continue
+            if cell.ground_layer.moisture < MIN_SPROUT_CELL_MOISTURE:
+                continue
             candidates.append(cell)
 
     if not candidates:
         return None
 
-    return random.choice(candidates)
+    weighted = []
+    for cell in candidates:
+        weight = 1.0 + cell.ground_layer.moisture * 5.0
+        weighted.append((cell, weight))
+
+    total = sum(weight for _, weight in weighted)
+    roll = random.uniform(0.0, total)
+    acc = 0.0
+    for cell, weight in weighted:
+        acc += weight
+        if roll <= acc:
+            return cell
+
+    return weighted[-1][0]
 
 
 def count_nearby_trees(world, center_x: int, center_y: int, radius: int) -> int:

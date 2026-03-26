@@ -12,6 +12,9 @@ CARDINAL_DIRECTIONS = [
     (0, -1),
 ]
 
+MIN_ROOT_CELL_MOISTURE = 0.10
+TREE_CANOPY_ROOT_PENALTY = 0.65
+
 
 def get_tree_roots(tree, world) -> list[TreeRoot]:
     roots: list[TreeRoot] = list(tree.root_objects)
@@ -53,14 +56,14 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
     if len(tree.root_positions) >= tree.max_root_count:
         return
 
-    is_saturated = is_tree_water_saturated(tree)
+    if is_tree_water_saturated(tree):
+        return
 
     enough_for_growth = tree.last_growth_paid > 0.0
     if not enough_for_growth:
         return
 
     tip_roots = get_tip_roots(tree, world)
-
     if not tip_roots:
         return
 
@@ -79,8 +82,6 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
         attempts_left -= 1
 
         growth_chance = get_effective_root_growth_chance(tree)
-        if is_saturated:
-            growth_chance *= 0.35
         if random.random() > growth_chance:
             continue
 
@@ -103,10 +104,14 @@ def get_effective_root_growth_chance(tree) -> float:
 
 def is_tree_water_saturated(tree) -> bool:
     demand = tree.maintenance_water_need_per_tick + tree.growth_water_need_per_tick
-    if demand <= 0:
-        return True
+    reserve_target = tree.water_buffer_capacity * 0.75
 
-    return tree.last_water_income >= demand
+    if demand <= 0:
+        return tree.water_buffer >= reserve_target
+
+    reserve_ok = tree.water_buffer >= reserve_target
+    inflow_ok = tree.last_water_income >= demand * 1.2
+    return reserve_ok and inflow_ok
 
 
 def grow_from_root_tip(tree, root: TreeRoot, world) -> bool:
@@ -151,14 +156,16 @@ def grow_from_root_tip(tree, root: TreeRoot, world) -> bool:
 
 def choose_growth_targets_for_root(tree, root: TreeRoot, world):
     candidates = []
-
     neighbors = get_neighbor_cells(world, root.cell_x, root.cell_y)
+    current_cell = world.get_cell(root.cell_x, root.cell_y)
+    current_moisture = current_cell.ground_layer.moisture if current_cell is not None else 0.0
 
     for nx, ny, cell in neighbors:
         if has_root_in_cell(cell):
             continue
 
-        if cell.ground_layer.moisture < 0.08:
+        neighbor_moisture = cell.ground_layer.moisture
+        if neighbor_moisture < MIN_ROOT_CELL_MOISTURE:
             continue
 
         direction = (nx - root.cell_x, ny - root.cell_y)
@@ -166,7 +173,11 @@ def choose_growth_targets_for_root(tree, root: TreeRoot, world):
             continue
 
         weight = compute_directional_weight(root.growth_direction, direction)
-        weight += cell.ground_layer.moisture * 5.0
+        weight += neighbor_moisture * 4.5
+        weight += max(0.0, neighbor_moisture - current_moisture) * 10.0
+
+        if any(obj.object_type == "tree" for obj in cell.standing_layer.get_objects()):
+            weight *= TREE_CANOPY_ROOT_PENALTY
 
         if weight <= 0:
             continue
