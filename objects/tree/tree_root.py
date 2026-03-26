@@ -80,6 +80,7 @@ class TreeRoot(WorldObject):
 
         max_take = self.uptake_capacity_per_tick * dt
         absorbed = min(available, max_take)
+        ground_layer.set_moisture(available - absorbed)
 
         kept = min(absorbed, self.self_need_per_tick * dt)
         transferred = max(0.0, absorbed - kept)
@@ -87,6 +88,6 @@ class TreeRoot(WorldObject):
         self.last_absorbed = round(absorbed, 4)
         self.last_kept = round(kept, 4)
         self.last_transferred = round(transferred, 4)
-        self.last_cell_moisture_after = round(available, 4)
+        self.last_cell_moisture_after = round(ground_layer.moisture, 4)
 
         return transferred
