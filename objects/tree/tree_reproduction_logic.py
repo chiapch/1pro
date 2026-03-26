@@ -57,8 +57,8 @@ def try_spawn_sprout_from_roots(tree, world) -> bool:
 
         nearby_trees = count_nearby_trees(
             world,
-            spawn_cell.x,
-            spawn_cell.y,
+            root.cell_x,
+            root.cell_y,
             radius=SPROUT_DENSITY_RADIUS,
         )
         local_density_factor = max(
