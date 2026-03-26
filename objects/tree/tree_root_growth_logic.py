@@ -53,8 +53,7 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
     if len(tree.root_positions) >= tree.max_root_count:
         return
 
-    if is_tree_water_saturated(tree):
-        return
+    is_saturated = is_tree_water_saturated(tree)
 
     enough_for_growth = tree.last_growth_paid > 0.0
     if not enough_for_growth:
@@ -80,6 +79,8 @@ def process_root_growth_step(tree, world, cell_x: int, cell_y: int) -> None:
         attempts_left -= 1
 
         growth_chance = get_effective_root_growth_chance(tree)
+        if is_saturated:
+            growth_chance *= 0.35
         if random.random() > growth_chance:
             continue
 
