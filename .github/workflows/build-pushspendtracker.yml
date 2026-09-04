@@ -97,7 +97,8 @@ jobs:
           cp "$SRC" unsigned-work.apk
           zip -d unsigned-work.apk 'META-INF/*' || true
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 unsigned-work.apk aligned.apk
-          openssl genrsa -out compat-key.pem 2048
+          openssl genrsa -out compat-key-pkcs1.pem 2048
+          openssl pkcs8 -topk8 -nocrypt -in compat-key-pkcs1.pem -out compat-key.pem
           openssl req -new -x509 -key compat-key.pem -out compat-cert.pem -days 3650 -subj '/CN=PushSpendTracker/O=Personal Finance/C=RU'
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
             --key compat-key.pem \
