@@ -52,7 +52,7 @@ jobs:
           unzip -q PushSpendTracker_MVP.zip -d build-src
           test -f build-src/PushSpendTracker/settings.gradle
 
-      - name: Apply Android 12 compatibility fixes
+      - name: Apply compatibility fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -75,14 +75,12 @@ jobs:
           g = gradle.read_text()
           g = g.replace("applicationId 'com.local.pushspendtracker'", "applicationId 'ru.pushspendtracker.expenses'")
           g = g.replace('minSdk 26', 'minSdk 23')
-          g = g.replace('targetSdk 35', 'targetSdk 31')
           g = g.replace('versionCode 1', 'versionCode 3')
           g = g.replace("versionName '0.1.0'", "versionName '0.1.2-release'")
           gradle.write_text(g)
 
           manifest = Path('build-src/PushSpendTracker/app/src/main/AndroidManifest.xml')
           m = manifest.read_text()
-          # The Android system must be able to bind to NotificationListenerService.
           m = m.replace(
               'android:name=".notification.BankNotificationListener"\n            android:exported="false"',
               'android:name=".notification.BankNotificationListener"\n            android:exported="true"'
@@ -91,7 +89,7 @@ jobs:
 
           assert 'final String resolvedBank = bank;' in s
           assert "applicationId 'ru.pushspendtracker.expenses'" in g
-          assert 'minSdk 23' in g and 'targetSdk 31' in g
+          assert 'minSdk 23' in g and 'targetSdk 35' in g
           PY
 
       - name: Unit tests
