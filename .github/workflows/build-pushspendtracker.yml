@@ -5,13 +5,13 @@ on:
     branches:
       - pushspendtracker-build
     paths:
-      - pushspendtracker_source.zip
+      - pst_chunks/**
       - .github/workflows/build-pushspendtracker.yml
   pull_request:
     branches:
       - main
     paths:
-      - pushspendtracker_source.zip
+      - pst_chunks/**
       - .github/workflows/build-pushspendtracker.yml
   workflow_dispatch:
 
@@ -43,11 +43,13 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Unpack project
+      - name: Rebuild and unpack project
         run: |
+          cat pst_chunks/chunk_*.txt | tr -d '\n\r ' | base64 -d > PushSpendTracker_MVP.zip
+          unzip -t PushSpendTracker_MVP.zip
           rm -rf build-src
           mkdir build-src
-          unzip -q pushspendtracker_source.zip -d build-src
+          unzip -q PushSpendTracker_MVP.zip -d build-src
           test -f build-src/PushSpendTracker/settings.gradle
 
       - name: Unit tests
