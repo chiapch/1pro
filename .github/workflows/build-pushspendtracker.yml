@@ -7,6 +7,12 @@ on:
     paths:
       - pushspendtracker_source.zip
       - .github/workflows/build-pushspendtracker.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - pushspendtracker_source.zip
+      - .github/workflows/build-pushspendtracker.yml
   workflow_dispatch:
 
 jobs:
