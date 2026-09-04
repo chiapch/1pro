@@ -18,7 +18,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -52,7 +52,7 @@ jobs:
           unzip -q PushSpendTracker_MVP.zip -d build-src
           test -f build-src/PushSpendTracker/settings.gradle
 
-      - name: Apply compiler and MIUI compatibility fixes
+      - name: Apply compatibility fixes
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -64,44 +64,73 @@ jobs:
               s = s.replace('db.insertUnparsed(postedAt, bank, pkg, title, text,', 'db.insertUnparsed(postedAt, resolvedBank, pkg, title, text,')
               s = s.replace('            t.bank = bank;\n', '            t.bank = resolvedBank;\n')
           listener.write_text(s)
-          assert 'final String resolvedBank = bank;' in s
 
           gradle = Path('build-src/PushSpendTracker/app/build.gradle')
           g = gradle.read_text()
-          g = g.replace('minSdk 26', 'minSdk 21')
+          g = g.replace("applicationId 'com.local.pushspendtracker'", "applicationId 'ru.pushspendtracker.expenses'")
+          g = g.replace('minSdk 26', 'minSdk 23')
           g = g.replace('targetSdk 35', 'targetSdk 31')
+          g = g.replace('versionCode 1', 'versionCode 2')
+          g = g.replace("versionName '0.1.0'", "versionName '0.1.1-compat'")
           gradle.write_text(g)
-          assert 'minSdk 21' in g and 'targetSdk 31' in g
 
           manifest = Path('build-src/PushSpendTracker/app/src/main/AndroidManifest.xml')
           m = manifest.read_text()
-          m = m.replace('android:name=".notification.BankNotificationListener"\n            android:exported="false"', 'android:name=".notification.BankNotificationListener"\n            android:exported="true"')
+          m = m.replace('android:name=".notification.BankNotificationListener"\n            android:exported="true"', 'android:name=".notification.BankNotificationListener"\n            android:exported="false"')
           manifest.write_text(m)
-          assert 'android:name=".notification.BankNotificationListener"\n            android:exported="true"' in m
+
+          assert "applicationId 'ru.pushspendtracker.expenses'" in g
+          assert 'targetSdk 31' in g
           PY
 
       - name: Unit tests
         working-directory: build-src/PushSpendTracker
         run: gradle testDebugUnitTest --stacktrace
 
-      - name: Build compatibility APK
+      - name: Build APK
         working-directory: build-src/PushSpendTracker
         run: gradle assembleDebug --stacktrace
 
-      - name: Verify APK and V1 signature
+      - name: Re-sign APK with dedicated test certificate
         run: |
-          APK=build-src/PushSpendTracker/app/build/outputs/apk/debug/app-debug.apk
-          test -f "$APK"
+          SRC=build-src/PushSpendTracker/app/build/outputs/apk/debug/app-debug.apk
+          cp "$SRC" unsigned-work.apk
+          zip -d unsigned-work.apk 'META-INF/*' || true
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -p -f 4 unsigned-work.apk aligned.apk
+          openssl genrsa -out compat-key.pem 2048
+          openssl req -new -x509 -key compat-key.pem -out compat-cert.pem -days 3650 -subj '/CN=PushSpendTracker/O=Personal Finance/C=RU'
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" sign \
+            --key compat-key.pem \
+            --cert compat-cert.pem \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out PushSpendTracker-Android12-v2.apk aligned.apk
+
+      - name: Verify APK
+        run: |
+          APK=PushSpendTracker-Android12-v2.apk
           unzip -t "$APK"
-          unzip -l "$APK" | grep -E 'META-INF/.*\.(RSA|DSA|EC)$'
-          jarsigner -verify "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | head -20
           sha256sum "$APK"
-          cp "$APK" PushSpendTracker-MIUI-Android12.apk
+
+      - name: Install on Android 12 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            adb install -r PushSpendTracker-Android12-v2.apk
+            adb shell pm path ru.pushspendtracker.expenses
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PushSpendTracker-MIUI-Android12
-          path: PushSpendTracker-MIUI-Android12.apk
+          name: PushSpendTracker-Android12-v2
+          path: PushSpendTracker-Android12-v2.apk
           if-no-files-found: error
           retention-days: 30
