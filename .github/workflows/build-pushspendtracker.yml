@@ -52,6 +52,19 @@ jobs:
           unzip -q PushSpendTracker_MVP.zip -d build-src
           test -f build-src/PushSpendTracker/settings.gradle
 
+      - name: Apply compiler fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('build-src/PushSpendTracker/app/src/main/java/com/local/pushspendtracker/notification/BankNotificationListener.java')
+          s = p.read_text()
+          s = s.replace('        if (bank == null) return;\n        // Never store authentication/OTP content', '        if (bank == null) return;\n        final String resolvedBank = bank;\n        // Never store authentication/OTP content')
+          s = s.replace('db.insertUnparsed(postedAt, bank, pkg, title, text,', 'db.insertUnparsed(postedAt, resolvedBank, pkg, title, text,')
+          s = s.replace('            t.bank = bank;\n', '            t.bank = resolvedBank;\n')
+          p.write_text(s)
+          assert 'final String resolvedBank = bank;' in s
+          PY
+
       - name: Unit tests
         working-directory: build-src/PushSpendTracker
         run: gradle testDebugUnitTest --stacktrace
