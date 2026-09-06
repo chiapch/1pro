@@ -1,0 +1,37 @@
+name: Portable Python Windows verification
+on:
+  push:
+    branches: [verification/qwen-news-20260906]
+    paths: [.github/workflows/python-embed-verification.yml]
+permissions: {}
+jobs:
+  portable-python:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    env:
+      PYTHONUTF8: '1'
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Validate public Python package and embedded application path
+        shell: python {0}
+        run: |
+          import hashlib,json,os,pathlib,subprocess,sys,urllib.request,zipfile
+          sys.stdout.reconfigure(encoding='utf-8')
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])/'Проверка программы с пробелами'
+          root.mkdir(exist_ok=True)
+          z=root/'runtime.zip'
+          with urllib.request.urlopen('https://www.python.org/ftp/python/3.13.15/python-3.13.15-embed-amd64.zip',timeout=60) as r:
+              data=r.read()
+          digest=hashlib.sha256(data).hexdigest()
+          assert digest=='d1f04d990aee1253d8569e8e5104e30fa9f5fa830899f14843448872d936a2cf',digest
+          z.write_bytes(data)
+          runtime=root/'runtime';runtime.mkdir(exist_ok=True)
+          with zipfile.ZipFile(z) as f:f.extractall(runtime)
+          for p in runtime.glob('python*._pth'):
+              p.write_text(p.read_text(encoding='utf-8')+'\n..\\app\n',encoding='utf-8')
+          app=root/'app';tests=app/'tests';tests.mkdir(parents=True,exist_ok=True)
+          (app/'sample_module.py').write_text('VALUE=47\n',encoding='utf-8')
+          (tests/'test_portable.py').write_text('import sqlite3,ssl,unittest\nfrom sample_module import VALUE\nclass PortableTests(unittest.TestCase):\n    def test_import_and_database(self):\n        self.assertEqual(VALUE,47)\n        db=sqlite3.connect(":memory:")\n        self.assertEqual(db.execute("SELECT 47").fetchone()[0],47)\n        db.close()\n        self.assertTrue(ssl.create_default_context())\n',encoding='utf-8')
+          p=subprocess.run([str(runtime/'python.exe'),'-m','unittest','discover','-s',str(tests),'-v'],cwd=str(root),capture_output=True,text=True,encoding='utf-8')
+          print(p.stdout);print(p.stderr);assert p.returncode==0
+          print('PORTABLE_PYTHON_VERIFIED '+json.dumps({'version':'3.13.15','sha256':digest,'bytes':len(data),'unicode_path':True,'module_import':True,'unittest_discovery':True,'sqlite':True,'ssl':True}))
