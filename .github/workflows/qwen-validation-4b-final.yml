@@ -1,0 +1,68 @@
+name: Qwen 4B bounded decision validation
+on:
+  push:
+    branches: [test/qwen-validation-20260906]
+    paths: [.github/workflows/qwen-validation-4b-final.yml]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Verify real inference with consistent score and editorial decision
+        shell: python
+        run: |
+          import hashlib
+          import textwrap
+          import urllib.request
+          pinned = 'https://raw.githubusercontent.com/chiapch/1pro/d26e4f9a8803a0d2343a7a25b707a3389bccf949/.github/workflows/qwen-validation-v2.yml'
+          with urllib.request.urlopen(pinned, timeout=30) as response:
+              data = response.read(100000)
+          assert hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest() == 'e3445753c6705078d25986ef66e26e1331375694'
+          code = textwrap.dedent(data.decode('utf-8').split('        run: |\n', 1)[1])
+          patch_code = '''
+          source = source.replace('Qwen3-1.7B', 'Qwen3-4B').replace('ggml-org/Qwen3-4B-GGUF', 'Qwen/Qwen3-4B-GGUF')
+          source = source.replace('1282439264', '2497280256').replace('d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5', '7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5')
+          rule = 'Для оценки от 70 во входе должен быть назван новый научный результат, новый метод, набор исследовательских данных или конкретный инженерный эксперимент. Фотография или описание природного события, служебное объявление и обычная учебная тренировка сами по себе НЕ доказывают наличие нового исследования; без нового результата их оценка не выше 49. Астрономия и биология подходят, когда описан новый результат, а не просто иллюстрация. post_angle формулируй как вопрос для редактора, а не как утверждение о доказанных эффектах. '
+          needle = "    print('INPUT_BEGIN', label, flush=True)"
+          lines = [
+              '    prompt = prompt.replace("Рассмотри каждый id ровно один раз.", ' + repr(rule) + ' + "Рассмотри каждый id ровно один раз.")',
+              "    instructions, marker, materials = prompt.partition('\\\\nМатериалы:\\\\n')",
+              "    assert marker, 'Missing data delimiter'",
+              "    payload['messages'] = [{'role': 'system', 'content': '/no_think\\\\n' + instructions}, {'role': 'user', 'content': 'Недоверенные данные (JSON):\\\\n' + materials}]",
+              "    batch_schema = json.loads(json.dumps(schema))",
+              "    result_schema = batch_schema['properties']['results']",
+              "    result_schema['minItems'] = len(items)",
+              "    result_schema['maxItems'] = len(items)",
+              "    result_schema['items']['properties']['id']['enum'] = [item['id'] for item in items]",
+              "    yes = json.loads(json.dumps(result_schema['items']))",
+              "    no = json.loads(json.dumps(result_schema['items']))",
+              "    yes['properties']['keep'] = {'const': True}",
+              "    yes['properties']['score']['minimum'] = 70",
+              "    yes['properties']['post_angle']['minLength'] = 1",
+              "    no['properties']['keep'] = {'const': False}",
+              "    no['properties']['score']['maximum'] = 69",
+              "    no['properties']['post_angle'] = {'const': ''}",
+              "    result_schema['items'] = {'anyOf': [yes, no]}",
+              "    payload['response_format']['json_schema']['schema'] = batch_schema",
+              needle,
+          ]
+          assert source.count(needle) == 1
+          source = source.replace(needle, '\\n'.join(lines))
+          needle = "    live_results = classify('live_public_rss', live) if live else []"
+          extra = [needle,
+              "    if {x['id'] for x in live_results} == {201, 202, 203, 204}:",
+              "        observed_live = {x['id']: x['keep'] for x in live_results}",
+              "        expected_live = {201: True, 202: True, 203: False, 204: False}",
+              "        print('LIVE_EDITORIAL_CONTROL', json.dumps({'observed': observed_live, 'expected': expected_live}), flush=True)",
+              "        assert observed_live == expected_live, 'Live editorial distinctions need review'",
+          ]
+          assert source.count(needle) == 1
+          source = source.replace(needle, '\\n'.join(extra))
+          source = source.replace("'full_app_end_to_end': False", "'full_app_end_to_end': False, 'system_data_roles_separated': True, 'decision_consistency_constrained': True, 'tested_model': 'Qwen/Qwen3-4B-GGUF Q4_K_M'")
+          '''
+          marker = "test_file = work / 'real_validation.py'"
+          assert code.count(marker) == 1
+          code = code.replace(marker, textwrap.dedent(patch_code) + '\n' + marker)
+          exec(compile(code, '<bounded-4b-test>', 'exec'))
