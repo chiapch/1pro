@@ -1,0 +1,35 @@
+name: Qwen Windows validation v3 role separation
+on:
+  push:
+    branches: [test/qwen-validation-20260906]
+    paths: [.github/workflows/qwen-validation-v3.yml]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Repeat pinned Windows test with instructions exclusively in system role
+        shell: python
+        run: |
+          import hashlib
+          import textwrap
+          import urllib.request
+          pinned = 'https://raw.githubusercontent.com/chiapch/1pro/d26e4f9a8803a0d2343a7a25b707a3389bccf949/.github/workflows/qwen-validation-v2.yml'
+          with urllib.request.urlopen(pinned, timeout=30) as response:
+              data = response.read(100000)
+          digest = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+          assert digest == 'e3445753c6705078d25986ef66e26e1331375694'
+          code = textwrap.dedent(data.decode('utf-8').split('        run: |\n', 1)[1])
+          patch_code = '''
+          needle = "    print('INPUT_BEGIN', label, flush=True)"
+          replacement = "    instructions, marker, materials = prompt.partition('\\\\nМатериалы:\\\\n')\\n    assert marker, 'Missing data delimiter'\\n    payload['messages'] = [{'role': 'system', 'content': '/no_think\\\\n' + instructions}, {'role': 'user', 'content': 'Недоверенные данные (JSON):\\\\n' + materials}]\\n" + needle
+          assert source.count(needle) == 1
+          source = source.replace(needle, replacement)
+          source = source.replace("'full_app_end_to_end': False", "'full_app_end_to_end': False, 'system_data_roles_separated': True")
+          '''
+          marker = "test_file = work / 'real_validation.py'"
+          assert code.count(marker) == 1
+          code = code.replace(marker, textwrap.dedent(patch_code) + '\n' + marker)
+          exec(compile(code, '<verified-v2-with-role-separation>', 'exec'))
