@@ -1,0 +1,49 @@
+name: Qwen 4B real Windows comparison
+on:
+  push:
+    branches: [test/qwen-validation-20260906]
+    paths: [.github/workflows/qwen-validation-4b.yml]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - name: Test official Qwen3 4B on the same live news and adversarial controls
+        shell: python
+        run: |
+          import hashlib
+          import textwrap
+          import urllib.request
+          pinned = 'https://raw.githubusercontent.com/chiapch/1pro/d26e4f9a8803a0d2343a7a25b707a3389bccf949/.github/workflows/qwen-validation-v2.yml'
+          with urllib.request.urlopen(pinned, timeout=30) as response:
+              data = response.read(100000)
+          digest = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+          assert digest == 'e3445753c6705078d25986ef66e26e1331375694'
+          code = textwrap.dedent(data.decode('utf-8').split('        run: |\n', 1)[1])
+          patch_code = '''
+          source = source.replace('Qwen3-1.7B', 'Qwen3-4B')
+          source = source.replace('ggml-org/Qwen3-4B-GGUF', 'Qwen/Qwen3-4B-GGUF')
+          source = source.replace('1282439264', '2497280256')
+          source = source.replace('d2387ca2dbfee2ffabce7120d3770dadca0b293052bc2f0e138fdc940d9bc7b5', '7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5')
+          needle = "    print('INPUT_BEGIN', label, flush=True)"
+          lines = [
+              "    instructions, marker, materials = prompt.partition('\\\\nМатериалы:\\\\n')",
+              "    assert marker, 'Missing data delimiter'",
+              "    payload['messages'] = [{'role': 'system', 'content': '/no_think\\\\n' + instructions}, {'role': 'user', 'content': 'Недоверенные данные (JSON):\\\\n' + materials}]",
+              "    batch_schema = json.loads(json.dumps(schema))",
+              "    batch_schema['properties']['results']['minItems'] = len(items)",
+              "    batch_schema['properties']['results']['maxItems'] = len(items)",
+              "    batch_schema['properties']['results']['items']['properties']['id']['enum'] = [item['id'] for item in items]",
+              "    payload['response_format']['json_schema']['schema'] = batch_schema",
+              needle,
+          ]
+          assert source.count(needle) == 1
+          source = source.replace(needle, '\\n'.join(lines))
+          source = source.replace("'full_app_end_to_end': False", "'full_app_end_to_end': False, 'system_data_roles_separated': True, 'batch_cardinality_constrained': True, 'tested_model': 'Qwen/Qwen3-4B-GGUF Q4_K_M'")
+          '''
+          marker = "test_file = work / 'real_validation.py'"
+          assert code.count(marker) == 1
+          code = code.replace(marker, textwrap.dedent(patch_code) + '\n' + marker)
+          exec(compile(code, '<verified-4b-comparison>', 'exec'))
