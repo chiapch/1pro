@@ -16,8 +16,7 @@ jobs:
         shell: python {0}
         run: |
           import urllib.request, textwrap
-          # Reuse the exact, publicly visible standalone test harness from run 1.
-          # This is not a copy of the private desktop app.
+          # Reuse the immutable public harness; private desktop app is not uploaded.
           url = 'https://raw.githubusercontent.com/chiapch/1pro/65018696ffde9280640413df07f94d76ac8687fe/.github/workflows/qwen-news-verification.yml'
           with urllib.request.urlopen(url, timeout=45) as r:
               workflow = r.read().decode('utf-8')
@@ -45,11 +44,8 @@ jobs:
                       row.update(keep=False,score=0,topic='Ручная проверка',review_required=True,reason='В тексте обнаружены команды для ИИ. Автоматическая рекомендация заблокирована; нужна ручная проверка.',post_angle='')
               emit('PIPELINE_ACCEPTED_RESULTS', {'results':results, 'manual_review_ids':manual, 'guard_is_not_a_neural_verdict':True})
               controls={r['id']:r for r in results}"""
-          # The first line already has its four leading spaces; dedent the remaining block consistently.
-          new = '\n'.join([new.splitlines()[0]] + [line[10:] for line in new.splitlines()[1:]])
           assert old in code
           code = code.replace(old, new)
-          # Probe the protected endpoint, without sending or exposing the random key.
           point = "    items = []"
           auth = """    unauthorized_status = None
               try:
@@ -60,7 +56,6 @@ jobs:
               emit('AUTH_CHECK',{'unauthorized_status':unauthorized_status})
               assert unauthorized_status == 401, 'Local model API accepted a request without the private session key'
               items = []"""
-          auth='\n'.join([auth.splitlines()[0]]+[line[10:] for line in auth.splitlines()[1:]])
           code = code.replace(point, auth)
           compile(code, '<standalone-qwen-hardened-verification>', 'exec')
           exec(code, {'__name__':'__main__'})
